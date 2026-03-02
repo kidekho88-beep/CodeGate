@@ -328,18 +328,23 @@ async def show_numbers(call: CallbackQuery, country: str):
     unseen = list(set(get_numbers(country)) - get_global_seen(country))
 
     if not unseen:
-        await call.message.edit_text("❌ No numbers available right now.")
-        await call.answer()
+        await call.answer("No numbers available.", show_alert=True)
         return
 
     selected = random.sample(unseen, min(3, len(unseen)))
     add_global_seen(country, selected)
     track_activity(uid, country, len(selected), selected)
 
-    invisible = "‎"  # zero width char (avoid empty error)
+    # পুরানো message delete (optional but clean)
+    try:
+        await call.message.delete()
+    except:
+        pass
 
-    await call.message.edit_text(
-        invisible,
+    # নতুন message পাঠানো (NO EMPTY TEXT ISSUE)
+    await bot.send_message(
+        chat_id=call.message.chat.id,
+        text=".",  # dummy text (not empty)
         reply_markup=numbers_keyboard(country, selected)
     )
 
@@ -353,4 +358,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-    
