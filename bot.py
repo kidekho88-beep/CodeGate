@@ -125,7 +125,6 @@ def numbers_keyboard(country, selected):
     flag = get_flag(country)
     rows = []
     for n in selected:
-        # copy করলে + সহ copy হবে, কিন্তু button এ + দেখাবে না
         display = n.lstrip("+")
         copy_val = n if n.startswith("+") else f"+{n}"
         rows.append([InlineKeyboardButton(
@@ -316,7 +315,7 @@ async def show_numbers(call: CallbackQuery, country: str):
     selected = random.sample(unseen, min(3, len(unseen)))
     add_global_seen(country, selected)
     track_activity(uid, country, len(selected), selected)
-    await call.message.edit_text(".", reply_markup=numbers_keyboard(country, selected))
+    await call.message.edit_text(f"🌐 Select a number to copy:", reply_markup=numbers_keyboard(country, selected))
     await call.answer()
 
 # ================= MAIN =================
@@ -327,3 +326,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+    
