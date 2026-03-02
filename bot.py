@@ -130,7 +130,7 @@ def numbers_keyboard(country, selected):
         copy_val = "+" + clean
 
         # 👇 Hair space ব্যবহার (almost invisible)
-        button_text = f"{flag}{clean}"
+        button_text = clean"
 
         rows.append([
             InlineKeyboardButton(
