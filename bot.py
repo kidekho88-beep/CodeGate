@@ -126,12 +126,15 @@ def numbers_keyboard(country, selected):
     rows = []
 
     for n in selected:
-        display = n.lstrip("+")
-        copy_val = n if n.startswith("+") else f"+{n}"
+        clean = n.lstrip("+")
+        copy_val = "+" + clean
+
+        # 👉 space কমিয়ে compact format
+        button_text = f"{flag}{clean}"
 
         rows.append([
             InlineKeyboardButton(
-                text=f"{flag} {display}",
+                text=button_text,
                 copy_text=CopyTextButton(text=copy_val)
             )
         ])
@@ -358,3 +361,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+            
