@@ -126,15 +126,12 @@ def numbers_keyboard(country, selected):
     rows = []
 
     for n in selected:
-        clean = n.lstrip("+")
+        clean = n.strip().replace("+", "")
         copy_val = "+" + clean
-
-        # 👇 Hair space ব্যবহার (almost invisible)
-        button_text = clean
 
         rows.append([
             InlineKeyboardButton(
-                text=button_text,
+                text=f"{flag} {clean}",
                 copy_text=CopyTextButton(text=copy_val)
             )
         ])
@@ -155,7 +152,7 @@ def numbers_keyboard(country, selected):
 
     rows.append([
         InlineKeyboardButton(
-            text="Otp Group",
+            text="OTP Group",
             url=config.OTP_GROUP_LINK
         )
     ])
@@ -337,23 +334,15 @@ async def show_numbers(call: CallbackQuery, country: str):
     unseen = list(set(get_numbers(country)) - get_global_seen(country))
 
     if not unseen:
-        await call.answer("No numbers available.", show_alert=True)
+        await call.answer("No numbers available", show_alert=True)
         return
 
     selected = random.sample(unseen, min(3, len(unseen)))
     add_global_seen(country, selected)
     track_activity(uid, country, len(selected), selected)
 
-    # পুরানো message delete (optional but clean)
-    try:
-        await call.message.delete()
-    except:
-        pass
-
-    # নতুন message পাঠানো (NO EMPTY TEXT ISSUE)
-    await bot.send_message(
-        chat_id=call.message.chat.id,
-        text=".",  # dummy text (not empty)
+    await call.message.edit_text(
+        "🌐 Select a number to copy:",
         reply_markup=numbers_keyboard(country, selected)
     )
 
