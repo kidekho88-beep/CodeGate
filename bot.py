@@ -125,9 +125,12 @@ def numbers_keyboard(country, selected):
     flag = get_flag(country)
     rows = []
     for n in selected:
+        # copy করলে + সহ copy হবে, কিন্তু button এ + দেখাবে না
+        display = n.lstrip("+")
+        copy_val = n if n.startswith("+") else f"+{n}"
         rows.append([InlineKeyboardButton(
-            text=n,
-            copy_text=CopyTextButton(text=n)
+            text=f"{flag} {display}",
+            copy_text=CopyTextButton(text=copy_val)
         )])
     rows.append([InlineKeyboardButton(text="Change Country", callback_data="back_to_countries")])
     rows.append([InlineKeyboardButton(text="Refresh", callback_data=f"refresh_{country}")])
@@ -313,9 +316,7 @@ async def show_numbers(call: CallbackQuery, country: str):
     selected = random.sample(unseen, min(3, len(unseen)))
     add_global_seen(country, selected)
     track_activity(uid, country, len(selected), selected)
-    # + sign সরাও
-    clean = [n.lstrip("+") for n in selected]
-    await call.message.edit_text(".", reply_markup=numbers_keyboard(country, clean))
+    await call.message.edit_text(".", reply_markup=numbers_keyboard(country, selected))
     await call.answer()
 
 # ================= MAIN =================
