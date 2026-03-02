@@ -30,7 +30,7 @@ dp = Dispatcher()
 os.makedirs(config.NUMBER_DIR, exist_ok=True)
 os.makedirs(config.SEEN_DIR, exist_ok=True)
 
-# ================= DATA =================
+# ================= UTILS =================
 def save_user_data():
     with open(DATA_FILE, "w") as f:
         json.dump({
@@ -49,7 +49,6 @@ def load_user_data():
     USER_LAST_NUMBERS = data.get("USER_LAST_NUMBERS", {})
     USER_LAST_ACTIVE = data.get("USER_LAST_ACTIVE", {})
 
-# ================= UTILS =================
 def get_countries():
     return [f.replace(".txt", "") for f in os.listdir(config.NUMBER_DIR)
             if f.endswith(".txt") and not f.endswith("_Backup.txt")]
@@ -114,41 +113,27 @@ def dashboard_keyboard():
 
 def country_keyboard():
     countries = get_countries()
-    rows = []
-    temp = []
+    buttons = []
     for c in countries:
         remaining = len(set(get_numbers(c)) - get_global_seen(c))
-        temp.append(InlineKeyboardButton(
-            text=f"{c} ({remaining})",
-            callback_data=f"country_{c}"
-        ))
-        if len(temp) == 3:
-            rows.append(temp)
-            temp = []
-    if temp:
-        rows.append(temp)
-
+        buttons.append(InlineKeyboardButton(text=f"{c} ({remaining})", callback_data=f"country_{c}"))
+    rows = [buttons[i:i+3] for i in range(0, len(buttons), 3)]
     rows.append([InlineKeyboardButton(text="⬅️ Back", callback_data="back_to_start")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 def numbers_keyboard(country, selected):
     flag = get_flag(country)
     rows = []
-
     for n in selected:
         display = n.lstrip("+")
         copy_val = n if n.startswith("+") else f"+{n}"
-        rows.append([
-            InlineKeyboardButton(
-                text=f"{flag} {display}",
-                copy_text=CopyTextButton(text=copy_val)
-            )
-        ])
-
-    rows.append([InlineKeyboardButton(text="🔄 Refresh", callback_data=f"refresh_{country}")])
-    rows.append([InlineKeyboardButton(text="🌍 Change Country", callback_data="back_to_countries")])
-    rows.append([InlineKeyboardButton(text="👥 OTP Group", url=config.OTP_GROUP_LINK)])
-
+        rows.append([InlineKeyboardButton(
+            text=f"{flag} {display}",
+            copy_text=CopyTextButton(text=copy_val)
+        )])
+    rows.append([InlineKeyboardButton(text="Change Country", callback_data="back_to_countries")])
+    rows.append([InlineKeyboardButton(text="Refresh", callback_data=f"refresh_{country}")])
+    rows.append([InlineKeyboardButton(text="OTP Group", url=config.OTP_GROUP_LINK)])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 def admin_keyboard():
@@ -172,66 +157,178 @@ async def cmd_start(message: Message):
         return
     USERS.add(uid)
     await message.answer(
-        "✨ Premium Number Bot ✨\n\nSelect an option below:",
+        "✨ *Premium Number Bot* ✨\n\n💡 Access multiple countries' numbers instantly.",
+        parse_mode="Markdown",
         reply_markup=dashboard_keyboard()
     )
 
 @dp.message(Command("admin"))
 async def cmd_admin(message: Message):
-    if message.from_user.id not in ADMINS:
-        await message.answer("❌ Not admin.")
+    uid = message.from_user.id
+    if uid not in ADMINS:
+        await message.answer("❌ You are not an admin.")
         return
-    await message.answer("⚙ Admin Panel", reply_markup=admin_keyboard())
+    await message.answer("⚙ *Admin Panel*", parse_mode="Markdown", reply_markup=admin_keyboard())
 
+@dp.message(F.text.in_({"📱 Get Number", "📦 Available Country"}))
+async def handle_get_number(message: Message):
+    await message.answer("🌍 *Select a Country*", parse_mode="Markdown", reply_markup=country_keyboard())
+
+@dp.message(F.text == "🌍 Active Traffic")
+async def handle_traffic(message: Message):
+    info = ""
+    for c in get_countries():
+        total = len(get_numbers(c))
+        used = len(get_global_seen(c))
+        info += f"🌐 {c} → Total: {total} | Used: {used} | Unused: {total - used}\n"
+    await message.answer(info or "No data.")
+
+@dp.message(F.text == "☎️ Support")
+async def handle_support(message: Message):
+    await message.answer("📞 Support: " + config.SUPPORT_LINK)
+
+@dp.message(F.document)
+async def receive_file(message: Message):
+    uid = message.from_user.id
+    if uid not in ADMINS or uid not in UPLOAD_MODE:
+        return
+    mode = UPLOAD_MODE.get(uid)
+    doc = message.document
+    try:
+        file = await bot.get_file(doc.file_id)
+        content_bytes = await bot.download_file(file.file_path)
+        content_str = content_bytes.read().decode("utf-8", errors="ignore")
+        numbers = [x.strip() for x in content_str.splitlines() if x.strip()]
+        if not numbers:
+            await message.answer("❌ File is empty or invalid!")
+            UPLOAD_MODE.pop(uid, None)
+            return
+        country = doc.file_name.replace(".txt", "").strip()
+        path = f"{config.NUMBER_DIR}/{country}.txt"
+        if mode == "add":
+            with open(path, "a") as f:
+                f.write("\n" + "\n".join(numbers))
+            await message.answer(f"✅ Numbers added to {country}!")
+    except Exception as e:
+        await message.answer(f"❌ Failed: {e}")
+    UPLOAD_MODE.pop(uid, None)
+
+@dp.message(F.text)
+async def admin_text(message: Message):
+    uid = message.from_user.id
+    if uid not in ADMINS:
+        return
+    mode = ADMIN_MODE.get(uid)
+    if not mode:
+        return
+    text = message.text.strip()
+    try:
+        if mode == "add_admin":
+            ADMINS.add(int(text))
+            await message.answer(f"✅ Admin added: {text}")
+        elif mode == "remove_admin":
+            ADMINS.discard(int(text))
+            await message.answer(f"❌ Admin removed: {text}")
+        elif mode == "broadcast":
+            sent = 0
+            for u in USERS:
+                try:
+                    await bot.send_message(u, f"📢 {text}")
+                    sent += 1
+                except:
+                    pass
+            await message.answer(f"✅ Sent to {sent} users")
+        elif mode == "ban":
+            BANNED.add(int(text))
+            await message.answer(f"🚫 Banned: {text}")
+        elif mode == "unban":
+            BANNED.discard(int(text))
+            await message.answer(f"✅ Unbanned: {text}")
+    except Exception as e:
+        await message.answer(f"❌ Invalid: {e}")
+    ADMIN_MODE.pop(uid, None)
+
+# ================= CALLBACKS =================
 @dp.callback_query()
 async def handle_callback(call: CallbackQuery):
     uid = call.from_user.id
     data = call.data
     cleanup_seen()
 
-    try:
-        if data == "back_to_start":
-            await call.message.edit_text(
-                "✨ Premium Number Bot ✨\n\nSelect an option below:"
-            )
-
-        elif data == "back_to_countries":
-            await call.message.edit_text(
-                "🌍 Select a Country",
-                reply_markup=country_keyboard()
-            )
-
-        elif data.startswith("country_"):
-            await show_numbers(call, data.replace("country_", ""))
-
-        elif data.startswith("refresh_"):
-            await show_numbers(call, data.replace("refresh_", ""))
-
+    if data == "back_to_start":
+        USERS.add(uid)
+        await call.message.edit_text(
+            "✨ *Premium Number Bot* ✨\n\n💡 Access multiple countries' numbers instantly.",
+            parse_mode="Markdown"
+        )
         await call.answer()
 
-    except:
+    elif data == "back_to_countries":
+        await call.message.edit_text(
+            "🌍 *Select a Country*",
+            parse_mode="Markdown",
+            reply_markup=country_keyboard()
+        )
+        await call.answer()
+
+    elif data.startswith("country_"):
+        await show_numbers(call, data.replace("country_", ""))
+
+    elif data.startswith("refresh_"):
+        await show_numbers(call, data.replace("refresh_", ""))
+
+    elif uid in ADMINS:
+        if data == "bulk_add":
+            UPLOAD_MODE[uid] = "add"
+            await call.message.answer("📥 Send a .txt file to add numbers (filename = country).")
+        elif data == "bulk_remove":
+            kb_rows = [[InlineKeyboardButton(text=f"❌ Remove {c}", callback_data=f"bulk_remove_country_{c}")] for c in get_countries()]
+            kb_rows.append([InlineKeyboardButton(text="⬅️ Back", callback_data="back_to_start")])
+            await call.message.answer("📤 Select country to remove:", reply_markup=InlineKeyboardMarkup(inline_keyboard=kb_rows))
+        elif data.startswith("bulk_remove_country_"):
+            country = data.replace("bulk_remove_country_", "")
+            removed = len(get_numbers(country))
+            open(f"{config.NUMBER_DIR}/{country}.txt", "w").close()
+            await call.message.answer(f"✅ Removed {removed} numbers from {country}.")
+        elif data == "clean":
+            cleaned = sum(remove_duplicates(c) for c in get_countries())
+            await call.message.answer(f"✅ Cleaned. Total: {cleaned}")
+        elif data == "broadcast":
+            ADMIN_MODE[uid] = "broadcast"
+            await call.message.answer("📢 Send broadcast text:")
+        elif data in ["add_admin", "remove_admin", "ban", "unban"]:
+            ADMIN_MODE[uid] = data
+            await call.message.answer("✏️ Send the ID now.")
+        elif data == "online_users":
+            await call.message.answer(f"👥 Total Users: {len(USERS)}")
+        await call.answer()
+    else:
         await call.answer()
 
 async def show_numbers(call: CallbackQuery, country: str):
+    uid = call.from_user.id
     unseen = list(set(get_numbers(country)) - get_global_seen(country))
 
     if not unseen:
         await call.message.edit_text("❌ No numbers available right now.")
+        await call.answer()
         return
 
     selected = random.sample(unseen, min(3, len(unseen)))
     add_global_seen(country, selected)
-    track_activity(call.from_user.id, country, len(selected), selected)
+    track_activity(uid, country, len(selected), selected)
 
     await call.message.edit_text(
         f"📱 {country} Numbers",
         reply_markup=numbers_keyboard(country, selected)
     )
 
+    await call.answer()
+
 # ================= MAIN =================
 async def main():
     load_user_data()
-    print("Bot running (FULL ORIGINAL SAFE)...")
+    print(">>> Bot starting (aiogram)...")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
