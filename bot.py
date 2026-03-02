@@ -124,16 +124,33 @@ def country_keyboard():
 def numbers_keyboard(country, selected):
     flag = get_flag(country)
     rows = []
+
     for n in selected:
         display = n.lstrip("+")
         copy_val = n if n.startswith("+") else f"+{n}"
-        rows.append([InlineKeyboardButton(
-            text=f"{flag} {display}",
-            copy_text=CopyTextButton(text=copy_val)
-        )])
-    rows.append([InlineKeyboardButton(text="Change Country", callback_data="back_to_countries")])
-    rows.append([InlineKeyboardButton(text="Refresh", callback_data=f"refresh_{country}")])
-    rows.append([InlineKeyboardButton(text="OTP Group", url=config.OTP_GROUP_LINK)])
+
+        rows.append([
+            InlineKeyboardButton(
+                text=f"{flag} {display}",
+                copy_text=CopyTextButton(text=copy_val)
+            )
+        ])
+
+    rows.append([InlineKeyboardButton(
+        text="Change Country",
+        callback_data="back_to_countries"
+    )])
+
+    rows.append([InlineKeyboardButton(
+        text="Refresh",
+        callback_data=f"refresh_{country}"
+    )])
+
+    rows.append([InlineKeyboardButton(
+        text="Otp Group",
+        url=config.OTP_GROUP_LINK
+    )])
+
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 def admin_keyboard():
@@ -307,6 +324,7 @@ async def handle_callback(call: CallbackQuery):
 
 async def show_numbers(call: CallbackQuery, country: str):
     uid = call.from_user.id
+
     unseen = list(set(get_numbers(country)) - get_global_seen(country))
 
     if not unseen:
@@ -318,8 +336,10 @@ async def show_numbers(call: CallbackQuery, country: str):
     add_global_seen(country, selected)
     track_activity(uid, country, len(selected), selected)
 
+    invisible = "‎"  # zero width char (avoid empty error)
+
     await call.message.edit_text(
-        f"📱 {country} Numbers",
+        invisible,
         reply_markup=numbers_keyboard(country, selected)
     )
 
@@ -333,3 +353,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+            
