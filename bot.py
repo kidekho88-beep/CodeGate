@@ -129,8 +129,8 @@ def numbers_keyboard(country, selected):
         clean = n.lstrip("+")
         copy_val = "+" + clean
 
-        # Compact format (no space)
-        button_text = f"{flag}{clean}"
+        # 👇 Hair space ব্যবহার (almost invisible)
+        button_text = f"{flag}\u200A{clean}"
 
         rows.append([
             InlineKeyboardButton(
@@ -139,20 +139,26 @@ def numbers_keyboard(country, selected):
             )
         ])
 
-    rows.append([InlineKeyboardButton(
-        text="Change Country",
-        callback_data="back_to_countries"
-    )])
+    rows.append([
+        InlineKeyboardButton(
+            text="Change Country",
+            callback_data="back_to_countries"
+        )
+    ])
 
-    rows.append([InlineKeyboardButton(
-        text="Refresh",
-        callback_data=f"refresh_{country}"
-    )])
+    rows.append([
+        InlineKeyboardButton(
+            text="Refresh",
+            callback_data=f"refresh_{country}"
+        )
+    ])
 
-    rows.append([InlineKeyboardButton(
-        text="Otp Group",
-        url=config.OTP_GROUP_LINK
-    )])
+    rows.append([
+        InlineKeyboardButton(
+            text="Otp Group",
+            url=config.OTP_GROUP_LINK
+        )
+    ])
 
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -361,4 +367,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-         
+    
