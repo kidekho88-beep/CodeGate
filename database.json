@@ -1,0 +1,3 @@
+{"users": [6260167422], "admins": [6260167422], "banned": []}
+# ================= GLOBALS =================
+DATA_FILE = "user_data.json"
