@@ -130,7 +130,7 @@ def numbers_keyboard(country, selected):
         copy_val = "+" + clean
 
         # 👇 Hair space ব্যবহার (almost invisible)
-        button_text = f"{flag}\u200A{clean}"
+        button_text = f"{flag}{clean}"
 
         rows.append([
             InlineKeyboardButton(
@@ -367,4 +367,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-    
+        
