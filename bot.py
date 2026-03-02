@@ -129,7 +129,7 @@ def numbers_keyboard(country, selected):
         clean = n.lstrip("+")
         copy_val = "+" + clean
 
-        # 👉 space কমিয়ে compact format
+        # Compact format (no space)
         button_text = f"{flag}{clean}"
 
         rows.append([
@@ -361,4 +361,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-            
+         
