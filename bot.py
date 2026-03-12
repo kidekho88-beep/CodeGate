@@ -898,6 +898,8 @@ async def show_numbers(call: CallbackQuery, country: str):
     add_global_seen(country, selected)
     track_activity(uid, country, can_take, selected)
 
+    uid_s = str(uid)
+    USER_LAST_NUMBERS[uid_s] = selected
     save_user_data()
 
     await call.message.edit_text(
