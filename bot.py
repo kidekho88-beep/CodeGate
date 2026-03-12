@@ -898,8 +898,6 @@ async def show_numbers(call: CallbackQuery, country: str):
     add_global_seen(country, selected)
     track_activity(uid, country, can_take, selected)
 
-    uid_s = str(uid)
-    USER_LAST_NUMBERS[uid_s] = selected
     save_user_data()
 
     await call.message.edit_text(
@@ -949,6 +947,7 @@ async def main():
 
     # Start webhook server
     app = web.Application()
+    app.router.add_post("/otp", handle_otp_webhook)
     app.router.add_get("/health", lambda r: web.Response(text="OK"))
     runner = web.AppRunner(app)
     await runner.setup()
@@ -960,5 +959,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-v10
-fix
