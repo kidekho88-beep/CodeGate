@@ -947,7 +947,6 @@ async def main():
 
     # Start webhook server
     app = web.Application()
-    app.router.add_post("/otp", handle_otp_webhook)
     app.router.add_get("/health", lambda r: web.Response(text="OK"))
     runner = web.AppRunner(app)
     await runner.setup()
