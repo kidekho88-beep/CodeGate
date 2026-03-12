@@ -1,6 +1,6 @@
 # ================== BOT CONFIG ==================
 
-BOT_TOKEN    = "7899745451:AAEodVkF4l3Nsx6QHubYBGVnmO4pCBJbcvQ"
+BOT_TOKEN    = "7899745451:AAF_8ksPwjqz01lifRMJakRqPWfKqOMWReY"
 ADMIN_IDS    = [6260167422]
 
 OTP_GROUP_LINK   = "https://t.me/codegateofficial"
