@@ -1,0 +1,14 @@
+{
+  "users": {},
+  "banned": [],
+  "vip": [],
+  "admins": [
+    "6260167422"
+  ],
+  "locked_countries": [],
+  "user_limits": {},
+  "per_req": 3,
+  "support_msgs": {},
+  "support_mode": [],
+  "upload_mode": {}
+}
